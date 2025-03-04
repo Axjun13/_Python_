@@ -22,3 +22,27 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 scheduler = AsyncIOScheduler()
 
 reminders = {}
+
+def get_gemini_response(message):
+    url = "https://api.gemini.com/v1/chat"
+    headers = {
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
+    }
+    response = requests.post(url, json={"message": message}, headers=headers)
+    return response.json().get("response", "Sorry, I couldn't get a response.")
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user}')
+    scheduler.start()
+
+@bot.event
+async def on_member_join(member):
+    channel = discord.utils.get(member.guild.text_channels, name="general")
+    if channel:
+        await channel.send(f"Welcome {member.mention}!")
+
+@bot.command(name='chat', help='Talk to the bot using the Gemini API')
+async def chat(ctx, *, message: str):
+    response = get_gemini_response(message)
+    await ctx.send(response)
