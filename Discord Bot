@@ -46,3 +46,36 @@ async def on_member_join(member):
 async def chat(ctx, *, message: str):
     response = get_gemini_response(message)
     await ctx.send(response)
+
+@bot.command(name='poll', help='Create a poll')
+async def poll(ctx, question: str, *options: str):
+    if len(options) < 2:
+        await ctx.send("Please provide at least two options.")
+        return
+    
+    embed = discord.Embed(title=question, description="\n".join([f"{i+1}. {option}" for i, option in enumerate(options)]))
+    poll_message = await ctx.send(embed=embed)
+    
+    for i in range(len(options)):
+        await poll_message.add_reaction(f"{i+1}\u20e3")
+
+@bot.command(name='remind', help="Set a reminder. Format: !remind [time] [message]")
+
+async def remind(ctx, time: str, *, reminder_message: str):
+    reminder_time = datetime.datetime.now() + datetime.timedelta(minutes=60)
+    reminder_id = len(reminders) + 1
+    reminders[reminder_id] = {
+        "user": ctx.author,
+        "time": reminder_time,
+        "message": reminder_message,
+        "task": None
+    }
+    
+    await ctx.send(f"Reminder set for {reminder_time.strftime('%Y-%m-%d %H:%M:%S')}.")
+
+def send_reminder():
+        asyncio.run_coroutine_threadsafe(ctx.send(f"{ctx.author.mention}, your reminder: {reminder_message}"), bot.loop)
+        del reminders[reminder_id]
+
+    reminder_task = scheduler.add_job(send_reminder, 'date', run_date=reminder_time)
+    reminders[reminder_id]["task"] = reminder_task
