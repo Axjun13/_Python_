@@ -8,7 +8,6 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 
-
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -79,3 +78,24 @@ def send_reminder():
 
     reminder_task = scheduler.add_job(send_reminder, 'date', run_date=reminder_time)
     reminders[reminder_id]["task"] = reminder_task
+
+@bot.command(name='cancel_reminder', help="Cancel a reminder by providing its ID.")
+async def cancel_reminder(ctx, reminder_id: int):
+    reminder = reminders.get(reminder_id)
+    if reminder:
+        reminder["task"].remove()
+        del reminders[reminder_id]
+        await ctx.send(f"Reminder {reminder_id} has been canceled.")
+    else:
+        await ctx.send("Reminder not found.")
+
+def auto_delete_reminders():
+    current_time = datetime.datetime.now()
+    expired_reminders = [reminder_id for reminder_id, reminder in reminders.items() if reminder["time"] <= current_time]
+    
+    for reminder_id in expired_reminders:
+        del reminders[reminder_id]
+
+scheduler.add_job(auto_delete_reminders, 'interval', seconds=60)
+
+bot.run(TOKEN)
